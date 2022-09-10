@@ -8,6 +8,7 @@ import com.most.web.resources.downloader.app.webresource.dto.WebResourceWithoutD
 import com.most.web.resources.downloader.utils.BlobUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 import org.mockito.internal.verification.VerificationModeFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,10 +20,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.web.servlet.MockMvc;
 
 import javax.sql.rowset.serial.SerialBlob;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.*;
 
 import static java.time.LocalDateTime.now;
+import static java.util.UUID.randomUUID;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.BDDMockito.given;
@@ -50,15 +53,10 @@ class WebResourcesDownloaderControllerTest {
     @MockBean
     private BlobUtil blobUtil;
 
-    private String googleUrl = "http://www.google.com";
-    private String onetUrl = "http://www.onet.pl";
-    private String weszloUrl = "http://www.weszlo.com";
-
-    private String invalidUrl = "wrong url";
 
     @Test
     public void whenPostValidWebResources_thenReturnStatusOk() throws Exception {
-        WebResourceRequestDto dto = new WebResourceRequestDto(googleUrl);
+        WebResourceRequestDto dto = new WebResourceRequestDto("http://www.google.com");
 
         mvc.perform(post("/webResources")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -68,7 +66,7 @@ class WebResourcesDownloaderControllerTest {
 
     @Test
     public void whenPostInValidWebResources_thenReturnStatusIsBadRequest() throws Exception {
-        WebResourceRequestDto dto = new WebResourceRequestDto(invalidUrl);
+        WebResourceRequestDto dto = new WebResourceRequestDto("some wrong url");
 
         mvc.perform(post("/webResources")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -80,9 +78,9 @@ class WebResourcesDownloaderControllerTest {
 
     @Test
     public void givenWebResourcesWithoutDataDto_whenGetWebResources_thenReturnJsonArrayAndStatusIsOk() throws Exception {
-        WebResourceWithoutDataDto google = WebResourceWithoutDataDto.create(0, googleUrl, UUID.randomUUID(), TEXT_HTML_VALUE, now());
-        WebResourceWithoutDataDto onet = WebResourceWithoutDataDto.create(1, onetUrl, UUID.randomUUID(), TEXT_HTML_VALUE, now());
-        WebResourceWithoutDataDto weszlo = WebResourceWithoutDataDto.create(2, weszloUrl, UUID.randomUUID(), TEXT_HTML_VALUE, now());
+        WebResourceWithoutDataDto google = createWebResourceWithoutDataDto(0L, "http://www.google.com");
+        WebResourceWithoutDataDto onet = createWebResourceWithoutDataDto(1L, "http://www.onet.pl");
+        WebResourceWithoutDataDto weszlo = createWebResourceWithoutDataDto(2L, "http://www.weszlo.com");
 
         Set<WebResourceWithoutDataDto> allWebResources = new HashSet(Arrays.asList(google, onet, weszlo));
 
@@ -91,32 +89,51 @@ class WebResourcesDownloaderControllerTest {
         mvc.perform(get("/webResources"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(3)));
-        verify(queryService, VerificationModeFactory.times(1)).findAll();
-        reset(queryService);
+
+        verifyFindAllIsCalledOnce();
     }
 
     @Test
     public void givenWebResourcesDto_whenGetWebResource_thenReturnJsonArrayAndStatusIsOk() throws Exception {
-        WebResourceDto google = WebResourceDto.create(0L, googleUrl, UUID.randomUUID(), TEXT_HTML_VALUE, new SerialBlob(new byte[0]), now());
+        long id = 0L;
+        WebResourceDto google = createWebResourceDto(id, "http://www.google.com");
 
-        given(queryService.findById(0L)).willReturn(Optional.of(google));
+        given(queryService.findById(id)).willReturn(Optional.of(google));
 
         mvc.perform(get("/webResources/0"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.CONTENT_TYPE,google.getContentType()))
                 .andExpect(jsonPath("$").doesNotExist());
-        verify(queryService, VerificationModeFactory.times(1)).findById(0L);
-        reset(queryService);
+
+        verifyFindByIdIsCalledOnce(id);
     }
 
     @Test
     public void givenWebResourcesDto_whenGetInvalidWebResource_thenReturnStatusIsNotFound() throws Exception {
-        given(queryService.findById(0L)).willReturn(Optional.empty());
+        long id = 0L;
+        given(queryService.findById(id)).willReturn(Optional.empty());
 
         mvc.perform(get("/webResources/0"))
                 .andExpect(status().isNotFound());
-        verify(queryService, VerificationModeFactory.times(1)).findById(0L);
-        reset(queryService);
+        verifyFindByIdIsCalledOnce(id);
+    }
+
+    private void verifyFindByIdIsCalledOnce(Long id) {
+        Mockito.verify(queryService, VerificationModeFactory.times(1)).findById(id);
+        Mockito.reset(queryService);
+    }
+
+    private void verifyFindAllIsCalledOnce() {
+        Mockito.verify(queryService, VerificationModeFactory.times(1)).findAll();
+        Mockito.reset(queryService);
+    }
+
+    private WebResourceDto createWebResourceDto(Long id, String url) throws SQLException {
+        return WebResourceDto.create(id, url, randomUUID(), TEXT_HTML_VALUE, new SerialBlob(new byte[0]), now());
+    }
+
+    private WebResourceWithoutDataDto createWebResourceWithoutDataDto(Long id, String url) throws SQLException {
+        return WebResourceWithoutDataDto.create(id, url, randomUUID(), TEXT_HTML_VALUE,  now());
     }
 
 }
