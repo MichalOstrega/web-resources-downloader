@@ -1,5 +1,7 @@
-package com.most.web.resources.downloader.app.webresource.httpClient;
+package com.most.web.resources.downloader.adapters.httpClient;
 
+import com.most.web.resources.downloader.app.webresource.httpClient.DownloadResponse;
+import com.most.web.resources.downloader.app.webresource.httpClient.HttpClient;
 import io.netty.handler.codec.http.HttpHeaders;
 import org.asynchttpclient.AsyncCompletionHandler;
 import org.asynchttpclient.Dsl;
@@ -15,7 +17,7 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 @Component
-class AsyncHttpClient implements HttpClient{
+class AsyncHttpClient implements HttpClient {
 
     @Override
     public DownloadResponse download(String url) throws ExecutionException, InterruptedException, IOException {

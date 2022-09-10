@@ -15,7 +15,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @Documented
 public @interface URL {
 
-    String message() default "{Url is invalid}";
+    String message() default "Url is invalid";
 
     Class<?>[] groups() default { };
 

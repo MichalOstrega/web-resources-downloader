@@ -8,11 +8,7 @@
 5. Aplikacja udostępnia Kafka GUI - AKHQ 
 
 **URUCHOMIENIE**
-1. Zbudowanie aplikacji za pomocą narzędzia MAVEN 
-
-*mvn package -DskipTests*
-
-2. Zbudowanie obrazu kontenera oraz uruchomienie kontenerów przy pomocy narzędzia Docker-compose
+1. Zbudowanie obrazu kontenera aplikacji oraz uruchomienie kontenerów przy pomocy narzędzia Docker-compose
 
 *docker-compose -f .\docker-compose-kafka.yml up*
 
