@@ -75,7 +75,7 @@ services:
   downloader-server:
     container_name: downloader-server
     build: .
-    image: downloader-server:latest
+    image: downloader-server-kafka:latest
     ports:
       - "28085:8085"
     links:
